@@ -1,0 +1,67 @@
+.sidebar {
+    width: 250px;
+    height: (100vh - 90px);
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 2px 0 5px rgba(214, 204, 204, 0.5);
+    padding-top: 30px;
+}
+
+.sidebar .menu-item {
+    text-decoration: none;    
+    color: #333;
+    border: none;
+    border-radius: 5px;
+    padding: 8px; /* Giảm padding cho nút */
+    font-size: 0.9rem; /* Giảm kích thước font */
+    display: flex; /* Để icon và text căn ngang */
+    align-items: center; /* Icon và text ở giữa */
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sidebar-title {
+    padding-left: 10px;
+}
+
+.sidebar .menu-item:hover {
+    background-color: #2fa44b;
+    color: #ffffff ;
+    transform: translateX(5px);
+    font-size: 0.95rem; /* Giảm hiệu ứng phóng to */
+}
+
+.sidebar .menu-item.active {
+    background-color: #2fa44b;
+    color: #fff;
+}
+
+.sidebar .menu-item svg {
+    font-size: 1.2rem; /* Kích thước icon */
+    width: 20px;
+}
+
+.logout-button {
+    margin-top: auto; /* Đẩy nút Logout xuống dưới cùng */
+    background-color: #282828;
+    color: red; /* Màu chữ đỏ */
+    border: none;
+    border-radius: 5px;
+    padding: 8px; /* Giảm padding cho nút Logout */
+    font-size: 0.9rem; /* Kích thước chữ */
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.logout-button:hover {
+    background-color: #f44336;
+    color: #ffffff;
+}
+
+.logout-button:active {
+    background-color: #c62828;
+}
