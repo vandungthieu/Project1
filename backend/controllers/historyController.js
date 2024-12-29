@@ -145,11 +145,11 @@ exports.getAllHistory = async (req, res) => {
 exports.getHistoryByPort = async (req, res) => {
   try {
     const { id_port } = req.params;
-    const device = await Device.findOne({id_port})
+    const device = await Device.findOne({id_port : id_port})
     if (!device) {
       return res.status(404).json({ message: 'Device not found' });
     }
-    const histories = await History.find({ portId: device._id }).populate({portId}).sort({ date_in: -1, time_in: -1 }) 
+    const histories = await History.find({ portId: device._id }).populate('portId').sort({ date_in: -1, time_in: -1 }) 
     if (!histories || histories.length === 0) {
       return res.status(404).json({ message: 'No history found for this port' });
     }
@@ -164,7 +164,7 @@ exports.getHistoryByPort = async (req, res) => {
 exports.getHistoryByUid = async (req, res) => {
   try {
     const {UID} = req.params;
-    const user = await User.findOne({UID})
+    const user = await User.findOne({UID : UID})
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

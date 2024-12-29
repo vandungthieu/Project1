@@ -3,9 +3,12 @@ const { getHistoryByPort, saveHistory, getAllHistory, getHistoryByUid } = requir
 
 const router = express.Router();
 
-router.get('/:UID', getHistoryByUid) // lấy lịch sử bởi người dùng
-router.get('/:id_port', getHistoryByPort);//lấy lịch sử theo id_port
-router.post('/', saveHistory); //lưu lịch sử
 router.get('/',getAllHistory); //lấy tất cả lịch sử
+
+router.post('/', saveHistory); //lưu lịch sử
+
+router.get('/user:UID', getHistoryByUid) // lấy lịch sử bởi người dùng
+
+router.get('/device:id_port', getHistoryByPort);//lấy lịch sử theo id_port
 
 module.exports = router;
