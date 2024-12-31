@@ -13,7 +13,7 @@ const UserManagement = () => {
     const [filteredUsers, setFilteredUsers] = useState([]);  // State for filtered users
 
     const getUsers = () => {
-        axios.get('http://localhost:3000/api/users')
+        axios.get('http://localhost:5000/api/users')
             .then(response => {
                 console.log(response.data);  // Process the fetched data
                 setUsers(response.data.data);
@@ -53,7 +53,9 @@ const UserManagement = () => {
                 (user.date_created && user.date_created.toLowerCase().includes(value)) ||
                 (user.date_update && user.date_update.toLowerCase().includes(value)) ||
                 (user.name && user.name.toLowerCase().includes(value)) ||
-                (user.email && user.email.toLowerCase().includes(value))
+                (user.finger && user.finger.toLowerCase().includes(value))
+                
+
             );
         });
 
@@ -83,7 +85,7 @@ const UserManagement = () => {
                             <td>STT</td>
                             <td>Họ tên</td>
                             <td>UID</td>
-                            <td>Email</td>
+                            <td>Fingerprint</td>
                             <td>Ngày đăng ký</td>
                         </tr>
                     </thead>
@@ -94,8 +96,8 @@ const UserManagement = () => {
                                     <td>{index + 1}</td>
                                     <td>{user.name}</td>
                                     <td>{user.UID}</td>
-                                    <td>{user.email}</td>
-                                    <td>{user.date_create}</td>
+                                    <td>{user.finger}</td>
+                                    <td>{user.createdAt}</td>
                                 </tr>
                             ))
                         ) : (

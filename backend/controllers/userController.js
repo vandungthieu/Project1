@@ -68,12 +68,12 @@ exports.getFingerprintByUid = async (req, res) => {
 // Tạo người dùng mới
 exports.createUser = async (req, res) => {
   try {
-    const { UID, avatar, name, email, finger } = req.body;
+    const { UID, name,  finger } = req.body;
 
-    if (!UID || !name || !email || !finger) {
+    if (!UID || !name ||  !finger) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: UID, name, email, or finger.',
+        message: 'Missing required fields: UID, name, or finger.',
       });
     }
 
@@ -89,9 +89,7 @@ exports.createUser = async (req, res) => {
     // Tạo người dùng mới
     const user = new User({
       UID,
-      avatar:avatar || null,
       name,
-      email,
       finger,
     });
 
@@ -115,89 +113,67 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// Hàm updateUser để cập nhật thông tin người dùng
-exports.updateUser = async (req, res) => {
-  try {
-    const { UID } = req.params;  
-    const { name, email, finger } = req.body;
+// // Hàm updateUser để cập nhật thông tin người dùng
+// exports.updateUser = async (req, res) => {
+//   try {
+//     const { UID } = req.params;  
+//     const { name, email, finger } = req.body;
 
-    if (!UID) {
-      return res.status(400).json({
-        success: false,
-        message: 'UID is required.',
-      });
-    }
+//     if (!UID) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'UID is required.',
+//       });
+//     }
 
-    // Tìm người dùng dựa trên UID
-    const user = await User.findOne({ UID });
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found.',
-      });
-    }
+//     // Tìm người dùng dựa trên UID
+//     const user = await User.findOne({ UID });
+//     if (!user) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'User not found.',
+//       });
+//     }
 
-    // Cập nhật các trường
-    user.name = name || user.name;
-    user.avatar = avatar || user.avatar;
-    user.email = email || user.email;
-    user.finger = finger || user.finger;  
-    user.date_update = date_update || user.date_update; ; 
+//     // Cập nhật các trường
+//     user.name = name || user.name;
+//     user.avatar = avatar || user.avatar;
+//     user.email = email || user.email;
+//     user.finger = finger || user.finger;  
+//     user.date_update = date_update || user.date_update; ; 
 
-    await user.save();
+//     await user.save();
 
-    return res.status(200).json({
-      success: true,
-      message: 'User updated successfully.',
-      data: user,
-    });
+//     return res.status(200).json({
+//       success: true,
+//       message: 'User updated successfully.',
+//       data: user,
+//     });
 
-  } catch (error) {
-    // Xử lý lỗi
-    return res.status(500).json({
-      success: false,
-      message: 'Error updating user.',
-      error: error.message,
-    });
-  }
-};
+//   } catch (error) {
+//     // Xử lý lỗi
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Error updating user.',
+//       error: error.message,
+//     });
+//   }
+// };
 
 // Hàm deleteUser để xóa người dùng
 exports.deleteUser = async (req, res) => {
+  const userId = req.params.id;
+
   try {
-    const { UID } = req.params;
+      // Xóa User
+      await User.findByIdAndDelete(userId);
 
-    // Kiểm tra nếu UID 
-    if (!UID) {
-      return res.status(400).json({
-        success: false,
-        message: 'UID is required.',
-      });
-    }
+      // Cập nhật các bản ghi History liên quan, đặt userId thành null
+      await History.updateMany({ userId }, { $set: { userId: null } });
 
-    // Tìm và xóa người dùng
-    const user = await User.findOneAndDelete({ UID });
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found.',
-      });
-    }
-
-    // Trả về kết quả thành công
-    return res.status(200).json({
-      success: true,
-      message: 'User deleted successfully.',
-      data: user,
-    });
-
-  } catch (error) {
-    // Xử lý lỗi
-    return res.status(500).json({
-      success: false,
-      message: 'Error deleting user.',
-      error: error.message,
-    });
+      res.status(200).json({ message: 'User and related history updated successfully' });
+  } catch (err) {
+      res.status(500).json({ error: err.message });
   }
 };
 

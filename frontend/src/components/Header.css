@@ -1,21 +1,53 @@
+/* Header.css */
+
 .header {
-    background-color: #2fa44b;
-    height: 50px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #fff;
-    font-size: 22px;
-    padding: 5px 20px;
-}
-
-.logo-header {
+    padding: 10px 20px;
+    background-color: #333;
+    color: white;
+  }
+  
+  .logo-header {
     display: flex;
-    gap: 10px
-
-}
-.header .user {
+    align-items: center;
+  }
+  
+  .logo-header-title {
+    font-size: 24px;
+    margin-left: 10px;
+  }
+  
+  .user {
     display: flex;
-    flex-direction: row;
-    gap: 10px;
-}
+    align-items: center;
+    cursor: pointer;  /* Thêm con trỏ khi hover vào */
+  }
+  
+  .user-name {
+    margin-right: 10px;
+    font-size: 18px;
+  }
+  
+  .admin-info {
+    position: absolute;
+    top: 60px;  /* Điều chỉnh tùy theo vị trí của header */
+    right: 20px;
+    background-color: white;
+    color: black;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    width: 250px;
+    z-index: 1000;  /* Đảm bảo nó hiển thị trên các phần tử khác */
+  }
+  
+  .admin-info h3 {
+    margin-top: 0;
+  }
+  
+  .admin-info p {
+    margin: 5px 0;
+  }
+  

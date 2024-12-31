@@ -1,12 +1,11 @@
 const express = require('express');
-const { getAdmin, updateAdmin } = require('../controllers/adminController');
+const { getAdmin, updatePin,  } = require('../controllers/adminController');
 
 
 const router = express.Router();
 
 
 router.get('/', getAdmin); 
-router.put('/:_id', updateAdmin); 
-
+router.put('/update-pin',updatePin)
 
 module.exports = router;
