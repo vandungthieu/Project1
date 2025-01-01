@@ -114,7 +114,8 @@ exports.createUser = async (req, res) => {
   }
 };
 
-exports.quetvantay= async(req, res) => {
+
+const createFingerfrint = async(req, res) => {
   try {
       const data = req.body;
 
@@ -135,6 +136,7 @@ exports.quetvantay= async(req, res) => {
       res.status(500).send({message:'Đã xảy ra lỗi.'});
   }
 }
+
 
 // Hàm deleteUser để xóa người dùng
 exports.deleteUser = async (req, res) => {
