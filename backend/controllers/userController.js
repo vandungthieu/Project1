@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const client = require('../utils/mqttClient');
 
 //  lấy tất cả người dùng
 exports.getAllUser = async (req, res) => {
@@ -113,52 +114,27 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// // Hàm updateUser để cập nhật thông tin người dùng
-// exports.updateUser = async (req, res) => {
-//   try {
-//     const { UID } = req.params;  
-//     const { name, email, finger } = req.body;
+exports.quetvantay= async(req, res) => {
+  try {
+      const data = req.body;
 
-//     if (!UID) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'UID is required.',
-//       });
-//     }
+      if (!data) {
+          return res.status(400).send({message:'Không có dữ liệu để gửi'});
+      }
 
-//     // Tìm người dùng dựa trên UID
-//     const user = await User.findOne({ UID });
-//     if (!user) {
-//       return res.status(404).json({
-//         success: false,
-//         message: 'User not found.',
-//       });
-//     }
-
-//     // Cập nhật các trường
-//     user.name = name || user.name;
-//     user.avatar = avatar || user.avatar;
-//     user.email = email || user.email;
-//     user.finger = finger || user.finger;  
-//     user.date_update = date_update || user.date_update; ; 
-
-//     await user.save();
-
-//     return res.status(200).json({
-//       success: true,
-//       message: 'User updated successfully.',
-//       data: user,
-//     });
-
-//   } catch (error) {
-//     // Xử lý lỗi
-//     return res.status(500).json({
-//       success: false,
-//       message: 'Error updating user.',
-//       error: error.message,
-//     });
-//   }
-// };
+      client.publish('/create', JSON.stringify(data), (error) => {
+          if (error) {
+              console.error('Lỗi khi gửi dữ liệu:', error);
+              return res.status(500).send({message:'Gửi dữ liệu thất bại.'});
+          }
+          res.status(200).send({message:'Dữ liệu đã được gửi thành công'});
+          console.log("đã gửi dữ liệu đến /create")
+      });
+  } catch (error) {
+      console.error('Lỗi:', error);
+      res.status(500).send({message:'Đã xảy ra lỗi.'});
+  }
+}
 
 // Hàm deleteUser để xóa người dùng
 exports.deleteUser = async (req, res) => {

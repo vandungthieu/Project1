@@ -28,18 +28,17 @@ app.use('/api/devices', deviceRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/admin', adminRoutes);
 
-// sử dụng MQTT Client trong một route
-app.post('/send-message', (req, res) => {
-    const message = req.body.message || 'Hello MQTT from Express!';
-    const topic = 'test/topic';
-
-    // Gửi thông điệp đến topic MQTT
-    mqttClient.publish(topic, message, (err) => {
-        if (err) {
-            return res.status(500).json({ error: 'Lỗi khi gửi thông điệp MQTT' });
+client.on("message", async (topic, message) => {
+    console.log("MQTT received topic:", topic.toString());
+    try {
+        if(topic.toString() === "/fingerprint"){
+        const jsonMessage = JSON.parse(message.toString());
+        await createAccessLog(jsonMessage);
         }
-        res.status(200).json({ success: `Đã gửi thông điệp: ${message} đến topic ${topic}` });
-    });
+    } catch (error) {
+        console.log("Message (Raw):", message.toString());
+        console.error("Error parsing message as JSON:", error);
+    }
 });
 
 // Server listener
