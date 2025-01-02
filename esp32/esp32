@@ -1,186 +1,176 @@
-#include <Wire.h>
-#include <LiquidCrystal_I2C.h>
-#include <Keypad.h>
-#include <Adafruit_Fingerprint.h>
-#include <SoftwareSerial.h>
+#include <Keypad.h>              // Thư viện để giao tiếp với bàn phím
+#include <Adafruit_Fingerprint.h> // Thư viện để giao tiếp với cảm biến vân tay
+#include <SoftwareSerial.h>      // Thư viện để sử dụng cổng serial mềm (nếu cần)
 
-// Pin cho LCD I2C
-LiquidCrystal_I2C lcd(0x27, 16, 2); // Địa chỉ 0x27, màn hình 16x2
-
-// Cài đặt cho Keypad 4x4
-const byte ROW_NUM    = 4; // Số hàng
-const byte COLUMN_NUM = 4; // Số cột
-char keys[ROW_NUM][COLUMN_NUM] = {
-  {'1','2','3','A'},
-  {'4','5','6','B'},
-  {'7','8','9','C'},
-  {'*','0','#','D'}
+// Cấu hình bàn phím ma trận 4x4
+const byte ROWS = 4;             // Số hàng
+const byte COLS = 4;             // Số cột
+char keys[ROWS][COLS] = {        // Các phím trên bàn phím
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
 };
-byte pin_rows[ROW_NUM] = {14, 13, 12, 27};
-byte pin_column[COLUMN_NUM] = {32,33,35,34};
-Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM);
 
-// Cài đặt cho AS608
-SoftwareSerial mySerial(16, 17);  // RX, TX
+// Chân nối bàn phím với ESP32
+byte rowPins[ROWS] = {13, 12, 14, 27}; // Chân nối hàng
+byte colPins[COLS] = {26, 25, 33, 32}; // Chân nối cột
+
+// Khởi tạo bàn phím
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+// Mật khẩu cần kiểm tra
+const String password = "1234";
+String inputPassword = ""; // Lưu trữ mật khẩu nhập từ bàn phím
+
+// Chân LED
+const int ledPin = 2;
+
+// Thiết lập các chân RX và TX cho AS608
+#define RX_PIN 16
+#define TX_PIN 17
+
+// Khởi tạo phần mềm Serial cho AS608 (nếu không sử dụng Serial1)
+SoftwareSerial mySerial(RX_PIN, TX_PIN);
+
+// Khởi tạo cảm biến vân tay
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 
-// Pin LED
-const int ledPin = 2; // Dùng chân GPIO 2 cho LED
-
-// Mật khẩu chủ nhà
-const String homePassword = "1234";
-
-// Biến kiểm tra trạng thái đăng ký vân tay
-bool isRegistering = false;
-
-// Danh sách tên người dùng theo ID vân tay (ID từ 1 đến 127)
-String userNames[] = {
-  "Khach 1", "Khach 2", "Nguyen A", "Nguyen B", "Nguyen C", "Nguyen D", // vân tay ID 1 đến 6
-  "Chinh", "Viet", "Hieu", "Hoa", "Lan", "Minh", // tiếp tục...
-};
-
 void setup() {
-  // Khởi động LCD
-  lcd.begin(16, 2);
-  lcd.print("Hien thi");
-  delay(1000);
+  pinMode(ledPin, OUTPUT);        // Đặt chế độ chân LED là OUTPUT
+  digitalWrite(ledPin, LOW);      // Tắt LED ban đầu
+  Serial.begin(115200);           // Kết nối Serial để debug
+  while (!Serial);                // Chờ Serial kết nối
+  Serial.println("Nhap mat khau:");
 
-  // Khởi động cảm biến vân tay
-  mySerial.begin(9600);
-  if (finger.begin()) {
-    lcd.clear();
-    lcd.print("Vui long quet vân tay");
+  // Khởi động Serial cho cảm biến vân tay
+  finger.begin(57600);
+  if (finger.verifyPassword()) {
+    Serial.println("Nhan dien van tay: Da ket noi thanh cong!");
   } else {
-    lcd.clear();
-    lcd.print("Khong the ket noi!");
-    while (1);
+    Serial.println("Nhan dien van tay: Ket noi that bai!");
+    while (1) { delay(1); }
   }
-
-  // Khởi động LED
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);  // LED tắt ban đầu
 }
 
 void loop() {
-  // Kiểm tra xem có đang trong chế độ đăng ký không
-  if (isRegistering) {
-    registerFingerprint();  // Gọi hàm đăng ký vân tay
-    return;  // Dừng lại để người dùng nhập vân tay
-  }
+  char key = keypad.getKey(); // Đọc phím từ bàn phím
 
-  // Kiểm tra quét vân tay
-  int fingerID = getFingerprintID();
-  if (fingerID >= 0) {
-    // Nếu quét vân tay thành công, hiển thị tên người dùng
-    lcd.clear();
-    lcd.print("Chao " + userNames[fingerID - 1]);
-    digitalWrite(ledPin, HIGH); // Bật đèn LED
-    delay(2000); // Hiển thị trong 2 giây
-    digitalWrite(ledPin, LOW);  // Tắt đèn LED
-    lcd.clear();
-    lcd.print("Chuc mung!");
-  }
+  if (key) { // Nếu có phím được nhấn
+    Serial.print("Ban nhan: ");
+    Serial.println(key);
 
-  // Kiểm tra nhập mật khẩu
-  String enteredPassword = "";
-  char key = keypad.getKey();
-  if (key) {
-    lcd.clear();
-    lcd.print("Nhap mat khau: ");
-    enteredPassword += key;
-
-    // Hiển thị mật khẩu
-    lcd.setCursor(0, 1);
-    lcd.print(enteredPassword);
-
-    if (enteredPassword == homePassword) {
-      digitalWrite(ledPin, HIGH); // Bật đèn LED
-      lcd.clear();
-      lcd.print("Mat khau dung!");
-      delay(2000);
-      digitalWrite(ledPin, LOW);  // Tắt đèn LED
+    if (key == '#') { // '#' dùng để kiểm tra mật khẩu
+      if (inputPassword == password) {
+        Serial.println("Mat khau dung! LED sang.");
+        blinkLED();
+      } else {
+        Serial.println("Sai mat khau! LED tat.");
+        digitalWrite(ledPin, LOW);  // Tắt LED
+      }
+      inputPassword = ""; // Xóa nội dung đã nhập
+    } 
+    else if (key == 'D') { // 'D' dùng để xóa mật khẩu đã nhập
+      Serial.println("Xoa mat khau nhap vao.");
+      inputPassword = "";
+    } 
+    else {
+      inputPassword += key; // Thêm ký tự vào mật khẩu nhập
+      Serial.print("Mat khau hien tai: ");
+      Serial.println(inputPassword);
     }
   }
 
-  // Chế độ đăng ký vân tay
-  if (key == 'A') {
-    isRegistering = true;
-    lcd.clear();
-    lcd.print("Dang ky van tay moi");
-    delay(1000);
-  }
+  // Kiểm tra vân tay
+  getFingerprintID();
 }
 
-// Hàm quét và xác nhận vân tay
-int getFingerprintID() {
-  int p = finger.getImage();
-  if (p != FINGERPRINT_OK) {
-    return -1; // Lỗi quét vân tay
-  }
-
-  p = finger.image2Tz();
-  if (p != FINGERPRINT_OK) {
-    return -1;
-  }
-
-  p = finger.fingerFastSearch();
-  if (p != FINGERPRINT_OK) {
-    return -1;
-  }
-
-  return finger.fingerID; // Trả về ID của vân tay đã quét
+// Hàm nháy LED
+void blinkLED() {
+  digitalWrite(ledPin, HIGH); // Bật LED
+  delay(500);
+  digitalWrite(ledPin, LOW);  // Tắt LED
+  delay(500);
 }
 
-// Hàm đăng ký vân tay
-void registerFingerprint() {
-  int id = -1;
-  lcd.clear();
-  lcd.print("Dang ky: Vui long");
-  lcd.setCursor(0, 1);
-  lcd.print("quen 1 lan");
-
-  // Bước 1: Quét vân tay để tạo mẫu
-  int p = finger.getImage();
-  if (p != FINGERPRINT_OK) {
-    lcd.clear();
-    lcd.print("Khong the quet");
-    return;
+// Hàm lấy ID vân tay
+uint8_t getFingerprintID() {
+  uint8_t p = finger.getImage();
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Hinh anh vân tay da duoc lay.");
+      break;
+    case FINGERPRINT_NOFINGER:
+      // Không có vân tay
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Loi giao tiep.");
+      return p;
+    case FINGERPRINT_IMAGEFAIL:
+      Serial.println("Lay hinh anh that bai.");
+      return p;
+    default:
+      Serial.println("Loi khong xac dinh.");
+      return p;
   }
 
-  // Bước 2: Chuyển ảnh vân tay thành mẫu
+  // Chuyển đổi hình ảnh thành mẫu
   p = finger.image2Tz();
-  if (p != FINGERPRINT_OK) {
-    lcd.clear();
-    lcd.print("Loi: Chuyen hinh");
-    return;
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Chuyen doi hinh anh thanh cong.");
+      break;
+    case FINGERPRINT_IMAGEMESS:
+      Serial.println("Hinh anh bo nhieu.");
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Loi giao tiep.");
+      return p;
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Lay dac trung that bai.");
+      return p;
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Hinh anh khong hop le.");
+      return p;
+    default:
+      Serial.println("Loi khong xac dinh.");
+      return p;
   }
 
-  // Bước 3: Lưu mẫu vân tay
-  lcd.clear();
-  lcd.print("Vui long dat van tay");
-  delay(2000);  // Đợi 2 giây cho người dùng đặt lại vân tay
-
-  p = finger.createModel();
-  if (p != FINGERPRINT_OK) {
-    lcd.clear();
-    lcd.print("Loi: Tao mau");
-    return;
-  }
-
-  // Bước 4: Lưu mẫu vào bộ nhớ
-  lcd.clear();
-  lcd.print("Luu vao ID: ");
-  id = finger.storeModel();
-  if (id >= 0) {
-    lcd.print(id);
-    lcd.setCursor(0, 1);
-    lcd.print("Dang ky thanh cong!");
-    delay(2000); // Hiển thị thông báo thành công
+  // So sánh mẫu với cơ sở dữ liệu
+  p = finger.fingerSearch();
+  if (p == FINGERPRINT_OK) {
+    Serial.print("Tim thay vân tay ID #"); Serial.print(finger.fingerID);
+    Serial.print(" với độ tin cậy "); Serial.println(finger.confidence);
+    blinkLED(); // Nháy LED khi nhận diện thành công
+    return finger.fingerID;
+  } else if (p == FINGERPRINT_NOTFOUND) {
+    Serial.println("Khong tim thay vân tay.");
+    return p;
   } else {
-    lcd.clear();
-    lcd.print("Loi: Luu mau");
+    Serial.println("Loi khong xac dinh.");
+    return p;
   }
+}
 
-  // Trở về chế độ quét vân tay
-  isRegistering = false;
+// Hàm thêm vân tay mới
+void enrollFingerprint() {
+  int id = 1; // ID vân tay mới
+  Serial.print("Them vân tay mới với ID #"); Serial.println(id);
+  int p = finger.enroll(id);
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Them vân tay thanh cong.");
+  } else {
+    Serial.print("Them vân tay that bai với mã lỗi: "); Serial.println(p);
+  }
+}
+
+// Hàm xóa vân tay
+void deleteFingerprint(uint8_t id) {
+  int p = finger.deleteModel(id);
+  if (p == FINGERPRINT_OK) {
+    Serial.print("Xoa vân tay ID #"); Serial.println(id);
+  } else {
+    Serial.print("Xoa vân tay that bai với mã lỗi: "); Serial.println(p);
+  }
 }
