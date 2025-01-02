@@ -3,14 +3,14 @@
 #include <Keypad.h>
 
 // Cấu hình Wi-Fi
-const char* ssid = "YOUR_SSID";          // Thay bằng SSID của bạn
-const char* password_wifi = "YOUR_PASS"; // Thay bằng mật khẩu Wi-Fi của bạn
+const char* ssid = "Duq";          // Thay bằng SSID của bạn
+const char* password_wifi = "77777777"; // Thay bằng mật khẩu Wi-Fi của bạn
 
 // Cấu hình MQTT
-const char* mqtt_server = "YOUR_MQTT_BROKER_IP"; // Thay bằng địa chỉ MQTT broker của bạn
+const char* mqtt_server = "e6156bdef5464a0d89c964ec95bdc7a8.s1.eu.hivemq.cloud"; // Thay bằng địa chỉ MQTT broker của bạn
 const int mqtt_port = 1883;                      // Thay nếu broker của bạn sử dụng cổng khác
-const char* mqtt_user = "YOUR_MQTT_USERNAME";     // Nếu broker yêu cầu
-const char* mqtt_password = "YOUR_MQTT_PASSWORD"; // Nếu broker yêu cầu
+const char* mqtt_user = "an106203";     // Nếu broker yêu cầu
+const char* mqtt_password = "An106203dh123@"; // Nếu broker yêu cầu
 
 WiFiClient espClient;
 PubSubClient client(espClient);
