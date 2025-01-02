@@ -16,8 +16,8 @@ char keys[ROW_NUM][COLUMN_NUM] = {
   {'7','8','9','C'},
   {'*','0','#','D'}
 };
-byte pin_rows[ROW_NUM] = {12, 14, 27, 26};
-byte pin_column[COLUMN_NUM] = {25, 33, 32, 34};
+byte pin_rows[ROW_NUM] = {14, 13, 12, 27};
+byte pin_column[COLUMN_NUM] = {32,33,35,34};
 Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM);
 
 // Cài đặt cho AS608

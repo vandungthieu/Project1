@@ -28,18 +28,18 @@ app.use('/api/devices', deviceRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/admin', adminRoutes);
 
-client.on("message", async (topic, message) => {
-    console.log("MQTT received topic:", topic.toString());
-    try {
-        if(topic.toString() === "/fingerprint"){
-        const jsonMessage = JSON.parse(message.toString());
-        await createAccessLog(jsonMessage);
-        }
-    } catch (error) {
-        console.log("Message (Raw):", message.toString());
-        console.error("Error parsing message as JSON:", error);
-    }
-});
+// client.on("message", async (topic, message) => {
+//     console.log("MQTT received topic:", topic.toString());
+//     try {
+//         if(topic.toString() === "/fingerprint"){
+//         const jsonMessage = JSON.parse(message.toString());
+//         await createAccessLog(jsonMessage);
+//         }
+//     } catch (error) {
+//         console.log("Message (Raw):", message.toString());
+//         console.error("Error parsing message as JSON:", error);
+//     }
+// });
 
 // Server listener
 const PORT = process.env.PORT || 5000;

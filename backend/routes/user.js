@@ -9,6 +9,6 @@ router.post('/', createUser); //tạo user
 router.get('/', getAllUser); //lấy tất cả user
 router.delete('/:UID',deleteUser); //xóa user
 router.get('/get-fingerprint/:UID',getFingerprintByUid)
-router.post('/quetvantay',quetvantay)
+
 
 module.exports = router;
