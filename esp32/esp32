@@ -1,6 +1,5 @@
 #include <Keypad.h>              // Thư viện để giao tiếp với bàn phím
 #include <Adafruit_Fingerprint.h> // Thư viện để giao tiếp với cảm biến vân tay
-#include <SoftwareSerial.h>      // Thư viện để sử dụng cổng serial mềm (nếu cần)
 
 // Cấu hình bàn phím ma trận 4x4
 const byte ROWS = 4;             // Số hàng
@@ -30,8 +29,8 @@ const int ledPin = 2;
 #define RX_PIN 16
 #define TX_PIN 17
 
-// Khởi tạo phần mềm Serial cho AS608 (nếu không sử dụng Serial1)
-SoftwareSerial mySerial(RX_PIN, TX_PIN);
+// Khởi tạo Serial1 cho AS608
+HardwareSerial mySerial(1); // Sử dụng Serial1
 
 // Khởi tạo cảm biến vân tay
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
@@ -43,8 +42,8 @@ void setup() {
   while (!Serial);                // Chờ Serial kết nối
   Serial.println("Nhap mat khau:");
 
-  // Khởi động Serial cho cảm biến vân tay
-  finger.begin(57600);
+  // Khởi động Serial1 cho cảm biến vân tay
+  mySerial.begin(57600, SERIAL_8N1, RX_PIN, TX_PIN);
   if (finger.verifyPassword()) {
     Serial.println("Nhan dien van tay: Da ket noi thanh cong!");
   } else {
