@@ -1,9 +1,24 @@
-#include <Keypad.h> // Thư viện để giao tiếp với bàn phím
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <Keypad.h>
+
+// Cấu hình Wi-Fi
+const char* ssid = "YOUR_SSID";          // Thay bằng SSID của bạn
+const char* password_wifi = "YOUR_PASS"; // Thay bằng mật khẩu Wi-Fi của bạn
+
+// Cấu hình MQTT
+const char* mqtt_server = "YOUR_MQTT_BROKER_IP"; // Thay bằng địa chỉ MQTT broker của bạn
+const int mqtt_port = 1883;                      // Thay nếu broker của bạn sử dụng cổng khác
+const char* mqtt_user = "YOUR_MQTT_USERNAME";     // Nếu broker yêu cầu
+const char* mqtt_password = "YOUR_MQTT_PASSWORD"; // Nếu broker yêu cầu
+
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 // Cấu hình bàn phím ma trận 4x4
-const byte ROWS = 4;             // Số hàng
-const byte COLS = 4;             // Số cột
-char keys[ROWS][COLS] = {        // Các phím trên bàn phím
+const byte ROWS = 4;             
+const byte COLS = 4;             
+char keys[ROWS][COLS] = {        
   {'1', '2', '3', 'A'},
   {'4', '5', '6', 'B'},
   {'7', '8', '9', 'C'},
@@ -17,42 +32,101 @@ byte colPins[COLS] = {26, 25, 33, 32}; // Chân nối cột
 // Khởi tạo bàn phím
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-// Mật khẩu cần kiểm tra
-const String password = "1234";
+// Mật khẩu cần kiểm tra (sẽ được cập nhật từ MQTT)
+String password_input = "1234"; // Giá trị mặc định
+
 String inputPassword = ""; // Lưu trữ mật khẩu nhập từ bàn phím
 
 // Chân LED
 const int ledPin = 2;
 
+// Callback khi nhận được thông điệp từ MQTT
+void callback(char* topic, byte* message, unsigned int length) {
+  Serial.print("Đã nhận thông điệp từ kênh: ");
+  Serial.println(topic);
+  
+  if (strcmp(topic, "/pin") == 0) {
+    String newPassword = "";
+    for (unsigned int i = 0; i < length; i++) {
+      newPassword += (char)message[i];
+    }
+    password_input = newPassword;
+    Serial.print("Mật khẩu mới được cập nhật từ MQTT: ");
+    Serial.println(password_input);
+  }
+}
+
+void reconnect() {
+  // Vòng lặp cho tới khi kết nối lại thành công
+  while (!client.connected()) {
+    Serial.print("Đang cố gắng kết nối MQTT...");
+    // Tạo ID client ngẫu nhiên
+    String clientId = "ESP32Client-";
+    clientId += String(random(0xffff), HEX);
+    // Thử kết nối
+    if (client.connect(clientId.c_str(), mqtt_user, mqtt_password)) {
+      Serial.println("Đã kết nối thành công tới MQTT broker");
+      // Đăng ký kênh để nhận mật khẩu
+      client.subscribe("/pin");
+    } else {
+      Serial.print("Thất bại, rc=");
+      Serial.print(client.state());
+      Serial.println(" Thử lại sau 5 giây");
+      delay(5000);
+    }
+  }
+}
+
 void setup() {
-  pinMode(ledPin, OUTPUT);  // Đặt chế độ chân LED là OUTPUT
-  digitalWrite(ledPin, LOW); // Tắt LED ban đầu
-  Serial.begin(115200);     // Kết nối Serial để debug
+  pinMode(ledPin, OUTPUT);  
+  digitalWrite(ledPin, LOW); 
+  Serial.begin(115200);     
+  Serial.println("Đang kết nối tới Wi-Fi...");
+  
+  // Kết nối Wi-Fi
+  WiFi.begin(ssid, password_wifi);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Đang kết nối...");
+  }
+  Serial.println("Đã kết nối tới Wi-Fi");
+  
+  // Cấu hình MQTT
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
+  
   Serial.println("Nhap mat khau:");
 }
 
 void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+  
   char key = keypad.getKey(); // Đọc phím từ bàn phím
 
   if (key) { // Nếu có phím được nhấn
-    Serial.print("Ban nhan: ");
+    Serial.print("Bạn nhấn: ");
     Serial.println(key);
 
     if (key == '#') { // '#' dùng để kiểm tra mật khẩu
-      if (inputPassword == password) {
-        Serial.println("Mat khau dung! LED sang.");
+      if (inputPassword == password_input) {
+        Serial.println("Mật khẩu đúng! LED sáng.");
         digitalWrite(ledPin, HIGH); // Bật LED
       } else {
-        Serial.println("Sai mat khau! LED tat.");
+        Serial.println("Sai mật khẩu! LED tắt.");
         digitalWrite(ledPin, LOW);  // Tắt LED
       }
       inputPassword = ""; // Xóa nội dung đã nhập
+      Serial.println("Nhap mat khau:");
     } else if (key == '*') { // '*' dùng để xóa mật khẩu đã nhập
-      Serial.println("Xoa mat khau nhap vao.");
+      Serial.println("Xóa mật khẩu nhập vào.");
       inputPassword = "";
+      Serial.println("Nhap mat khau:");
     } else {
       inputPassword += key; // Thêm ký tự vào mật khẩu nhập
-      Serial.print("Mat khau hien tai: ");
+      Serial.print("Mật khẩu hiện tại: ");
       Serial.println(inputPassword);
     }
   }
