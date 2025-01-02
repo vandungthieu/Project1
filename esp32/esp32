@@ -1,5 +1,4 @@
-#include <Keypad.h>              // Thư viện để giao tiếp với bàn phím
-#include <Adafruit_Fingerprint.h> // Thư viện để giao tiếp với cảm biến vân tay
+#include <Keypad.h> // Thư viện để giao tiếp với bàn phím
 
 // Cấu hình bàn phím ma trận 4x4
 const byte ROWS = 4;             // Số hàng
@@ -25,31 +24,11 @@ String inputPassword = ""; // Lưu trữ mật khẩu nhập từ bàn phím
 // Chân LED
 const int ledPin = 2;
 
-// Thiết lập các chân RX và TX cho AS608
-#define RX_PIN 16
-#define TX_PIN 17
-
-// Khởi tạo Serial1 cho AS608
-HardwareSerial mySerial(1); // Sử dụng Serial1
-
-// Khởi tạo cảm biến vân tay
-Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
-
 void setup() {
-  pinMode(ledPin, OUTPUT);        // Đặt chế độ chân LED là OUTPUT
-  digitalWrite(ledPin, LOW);      // Tắt LED ban đầu
-  Serial.begin(115200);           // Kết nối Serial để debug
-  while (!Serial);                // Chờ Serial kết nối
+  pinMode(ledPin, OUTPUT);  // Đặt chế độ chân LED là OUTPUT
+  digitalWrite(ledPin, LOW); // Tắt LED ban đầu
+  Serial.begin(115200);     // Kết nối Serial để debug
   Serial.println("Nhap mat khau:");
-
-  // Khởi động Serial1 cho cảm biến vân tay
-  mySerial.begin(57600, SERIAL_8N1, RX_PIN, TX_PIN);
-  if (finger.verifyPassword()) {
-    Serial.println("Nhan dien van tay: Da ket noi thanh cong!");
-  } else {
-    Serial.println("Nhan dien van tay: Ket noi that bai!");
-    while (1) { delay(1); }
-  }
 }
 
 void loop() {
@@ -62,200 +41,19 @@ void loop() {
     if (key == '#') { // '#' dùng để kiểm tra mật khẩu
       if (inputPassword == password) {
         Serial.println("Mat khau dung! LED sang.");
-        blinkLED();
+        digitalWrite(ledPin, HIGH); // Bật LED
       } else {
         Serial.println("Sai mat khau! LED tat.");
         digitalWrite(ledPin, LOW);  // Tắt LED
       }
       inputPassword = ""; // Xóa nội dung đã nhập
-    } 
-    else if (key == 'D') { // 'D' dùng để xóa mật khẩu đã nhập
+    } else if (key == '*') { // '*' dùng để xóa mật khẩu đã nhập
       Serial.println("Xoa mat khau nhap vao.");
       inputPassword = "";
-    } 
-    else if (key == 'A') { // 'A' dùng để thêm vân tay
-      Serial.println("Bat dau them van tay...");
-      enrollFingerprint(1); // Bạn có thể thay đổi ID theo nhu cầu
-    }
-    else {
+    } else {
       inputPassword += key; // Thêm ký tự vào mật khẩu nhập
       Serial.print("Mat khau hien tai: ");
       Serial.println(inputPassword);
     }
-  }
-
-  // Kiểm tra vân tay
-  getFingerprintID();
-}
-
-// Hàm nháy LED
-void blinkLED() {
-  digitalWrite(ledPin, HIGH); // Bật LED
-  delay(500);
-  digitalWrite(ledPin, LOW);  // Tắt LED
-  delay(500);
-}
-
-// Hàm lấy ID vân tay
-uint8_t getFingerprintID() {
-  uint8_t p = finger.getImage();
-  switch (p) {
-    case FINGERPRINT_OK:
-      Serial.println("Hinh anh vân tay da duoc lay.");
-      break;
-    case FINGERPRINT_NOFINGER:
-      // Không có vân tay
-      return p;
-    case FINGERPRINT_PACKETRECIEVEERR:
-      Serial.println("Loi giao tiep.");
-      return p;
-    case FINGERPRINT_IMAGEFAIL:
-      Serial.println("Lay hinh anh that bai.");
-      return p;
-    default:
-      Serial.println("Loi khong xac dinh.");
-      return p;
-  }
-
-  // Chuyển đổi hình ảnh thành mẫu
-  p = finger.image2Tz();
-  switch (p) {
-    case FINGERPRINT_OK:
-      Serial.println("Chuyen doi hinh anh thanh cong.");
-      break;
-    case FINGERPRINT_IMAGEMESS:
-      Serial.println("Hinh anh bo nhieu.");
-      return p;
-    case FINGERPRINT_PACKETRECIEVEERR:
-      Serial.println("Loi giao tiep.");
-      return p;
-    case FINGERPRINT_FEATUREFAIL:
-      Serial.println("Lay dac trung that bai.");
-      return p;
-    case FINGERPRINT_INVALIDIMAGE:
-      Serial.println("Hinh anh khong hop le.");
-      return p;
-    default:
-      Serial.println("Loi khong xac dinh.");
-      return p;
-  }
-
-  // So sánh mẫu với cơ sở dữ liệu
-  p = finger.fingerSearch();
-  if (p == FINGERPRINT_OK) {
-    Serial.print("Tim thay vân tay ID #"); Serial.print(finger.fingerID);
-    Serial.print(" với độ tin cậy "); Serial.println(finger.confidence);
-    blinkLED(); // Nháy LED khi nhận diện thành công
-    return finger.fingerID;
-  } else if (p == FINGERPRINT_NOTFOUND) {
-    Serial.println("Khong tim thay vân tay.");
-    return p;
-  } else {
-    Serial.println("Loi khong xac dinh.");
-    return p;
-  }
-}
-
-// Hàm thêm vân tay mới (đã sửa)
-void enrollFingerprint(uint16_t id) {
-  int p = -1;
-  
-  Serial.print("Vui lòng đặt ngón tay lên cảm biến và nhấn nút A để bắt đầu đăng ký...\n");
-  
-  // Bước 1: Chụp hình ảnh lần thứ nhất
-  while (p != FINGERPRINT_OK) {
-    p = finger.getImage();
-    switch (p) {
-      case FINGERPRINT_OK:
-        Serial.println("Hình ảnh vân tay lần 1 đã được chụp.");
-        break;
-      case FINGERPRINT_NOFINGER:
-        Serial.print(".");
-        break;
-      case FINGERPRINT_PACKETRECIEVEERR:
-        Serial.println("Lỗi giao tiếp.");
-        break;
-      case FINGERPRINT_IMAGEFAIL:
-        Serial.println("Chụp hình ảnh thất bại.");
-        break;
-      default:
-        Serial.println("Lỗi không xác định.");
-        break;
-    }
-    delay(100);
-  }
-
-  // Bước 2: Chuyển đổi hình ảnh thành mẫu lần thứ nhất
-  p = finger.image2Tz(1);
-  if (p != FINGERPRINT_OK) {
-    Serial.println("Chuyển đổi hình ảnh lần 1 thất bại.");
-    return;
-  } else {
-    Serial.println("Chuyển đổi hình ảnh lần 1 thành công.");
-  }
-
-  // Yêu cầu người dùng đưa ngón tay lên cảm biến lần thứ hai
-  Serial.println("Vui lòng đưa lại ngón tay lên cảm biến và nhấn nút A để tiếp tục...");
-
-  p = -1;
-  while (p != FINGERPRINT_OK) {
-    p = finger.getImage();
-    switch (p) {
-      case FINGERPRINT_OK:
-        Serial.println("Hình ảnh vân tay lần 2 đã được chụp.");
-        break;
-      case FINGERPRINT_NOFINGER:
-        Serial.print(".");
-        break;
-      case FINGERPRINT_PACKETRECIEVEERR:
-        Serial.println("Lỗi giao tiếp.");
-        break;
-      case FINGERPRINT_IMAGEFAIL:
-        Serial.println("Chụp hình ảnh thất bại.");
-        break;
-      default:
-        Serial.println("Lỗi không xác định.");
-        break;
-    }
-    delay(100);
-  }
-
-  // Bước 4: Chuyển đổi hình ảnh thành mẫu lần thứ hai
-  p = finger.image2Tz(2);
-  if (p != FINGERPRINT_OK) {
-    Serial.println("Chuyển đổi hình ảnh lần 2 thất bại.");
-    return;
-  } else {
-    Serial.println("Chuyển đổi hình ảnh lần 2 thành công.");
-  }
-
-  // Bước 5: Tạo mô hình từ hai mẫu
-  p = finger.createModel();
-  if (p == FINGERPRINT_OK) {
-    Serial.println("Tạo mô hình vân tay thành công.");
-  } else {
-    Serial.print("Tạo mô hình vân tay thất bại với mã lỗi: ");
-    Serial.println(p);
-    return;
-  }
-
-  // Bước 6: Lưu mô hình vào bộ nhớ với ID đã chọn
-  p = finger.storeModel(id);
-  if (p == FINGERPRINT_OK) {
-    Serial.print("Lưu mô hình vân tay vào ID #");
-    Serial.println(id);
-  } else {
-    Serial.print("Lưu mô hình thất bại với mã lỗi: ");
-    Serial.println(p);
-  }
-}
-
-// Hàm xóa vân tay
-void deleteFingerprint(uint8_t id) {
-  int p = finger.deleteModel(id);
-  if (p == FINGERPRINT_OK) {
-    Serial.print("Xoa vân tay ID #"); Serial.println(id);
-  } else {
-    Serial.print("Xoa vân tay that bai với mã lỗi: "); Serial.println(p);
   }
 }
