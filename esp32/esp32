@@ -73,6 +73,10 @@ void loop() {
       Serial.println("Xoa mat khau nhap vao.");
       inputPassword = "";
     } 
+    else if (key == 'A') { // 'A' dùng để thêm vân tay
+      Serial.println("Bat dau them van tay...");
+      enrollFingerprint(1); // Bạn có thể thay đổi ID theo nhu cầu
+    }
     else {
       inputPassword += key; // Thêm ký tự vào mật khẩu nhập
       Serial.print("Mat khau hien tai: ");
@@ -152,15 +156,97 @@ uint8_t getFingerprintID() {
   }
 }
 
-// Hàm thêm vân tay mới
-void enrollFingerprint() {
-  int id = 1; // ID vân tay mới
-  Serial.print("Them vân tay mới với ID #"); Serial.println(id);
-  int p = finger.enroll(id);
-  if (p == FINGERPRINT_OK) {
-    Serial.println("Them vân tay thanh cong.");
+// Hàm thêm vân tay mới (đã sửa)
+void enrollFingerprint(uint16_t id) {
+  int p = -1;
+  
+  Serial.print("Vui lòng đặt ngón tay lên cảm biến và nhấn nút A để bắt đầu đăng ký...\n");
+  
+  // Bước 1: Chụp hình ảnh lần thứ nhất
+  while (p != FINGERPRINT_OK) {
+    p = finger.getImage();
+    switch (p) {
+      case FINGERPRINT_OK:
+        Serial.println("Hình ảnh vân tay lần 1 đã được chụp.");
+        break;
+      case FINGERPRINT_NOFINGER:
+        Serial.print(".");
+        break;
+      case FINGERPRINT_PACKETRECIEVEERR:
+        Serial.println("Lỗi giao tiếp.");
+        break;
+      case FINGERPRINT_IMAGEFAIL:
+        Serial.println("Chụp hình ảnh thất bại.");
+        break;
+      default:
+        Serial.println("Lỗi không xác định.");
+        break;
+    }
+    delay(100);
+  }
+
+  // Bước 2: Chuyển đổi hình ảnh thành mẫu lần thứ nhất
+  p = finger.image2Tz(1);
+  if (p != FINGERPRINT_OK) {
+    Serial.println("Chuyển đổi hình ảnh lần 1 thất bại.");
+    return;
   } else {
-    Serial.print("Them vân tay that bai với mã lỗi: "); Serial.println(p);
+    Serial.println("Chuyển đổi hình ảnh lần 1 thành công.");
+  }
+
+  // Yêu cầu người dùng đưa ngón tay lên cảm biến lần thứ hai
+  Serial.println("Vui lòng đưa lại ngón tay lên cảm biến và nhấn nút A để tiếp tục...");
+
+  p = -1;
+  while (p != FINGERPRINT_OK) {
+    p = finger.getImage();
+    switch (p) {
+      case FINGERPRINT_OK:
+        Serial.println("Hình ảnh vân tay lần 2 đã được chụp.");
+        break;
+      case FINGERPRINT_NOFINGER:
+        Serial.print(".");
+        break;
+      case FINGERPRINT_PACKETRECIEVEERR:
+        Serial.println("Lỗi giao tiếp.");
+        break;
+      case FINGERPRINT_IMAGEFAIL:
+        Serial.println("Chụp hình ảnh thất bại.");
+        break;
+      default:
+        Serial.println("Lỗi không xác định.");
+        break;
+    }
+    delay(100);
+  }
+
+  // Bước 4: Chuyển đổi hình ảnh thành mẫu lần thứ hai
+  p = finger.image2Tz(2);
+  if (p != FINGERPRINT_OK) {
+    Serial.println("Chuyển đổi hình ảnh lần 2 thất bại.");
+    return;
+  } else {
+    Serial.println("Chuyển đổi hình ảnh lần 2 thành công.");
+  }
+
+  // Bước 5: Tạo mô hình từ hai mẫu
+  p = finger.createModel();
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Tạo mô hình vân tay thành công.");
+  } else {
+    Serial.print("Tạo mô hình vân tay thất bại với mã lỗi: ");
+    Serial.println(p);
+    return;
+  }
+
+  // Bước 6: Lưu mô hình vào bộ nhớ với ID đã chọn
+  p = finger.storeModel(id);
+  if (p == FINGERPRINT_OK) {
+    Serial.print("Lưu mô hình vân tay vào ID #");
+    Serial.println(id);
+  } else {
+    Serial.print("Lưu mô hình thất bại với mã lỗi: ");
+    Serial.println(p);
   }
 }
 
